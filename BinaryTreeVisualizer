@@ -1,0 +1,143 @@
+#!/bin/env python3
+
+import sys
+import random
+from random import randint
+import matplotlib
+from matplotlib import pyplot as plt
+from matplotlib.patches import Circle
+import random
+from random import randint as rd
+
+def part(a, l, h):
+    i = l - 1
+    for j in range(l, h):
+        if a[j] <= a[h]:
+            i += 1
+            a[i], a[j] = a[j], a[i]
+    a[i+1], a[h] = a[h], a[i+1]
+    return i+1
+
+def qsortr(a, l, h):
+    if l < h:
+        p = part(a, l, h)
+        qsortr(a, l, p-1)
+        qsortr(a, p+1, h)
+
+def qsort(a):
+    return qsortr(a, 0, len(a)-1) if len(a) > 1 else a
+
+class TreeNode:
+    left = None
+    right = None
+    data = None
+
+    def __init__(self, data):
+        self.data = data
+
+def insert_tree(data, head):
+    if head is None:
+        head = TreeNode(data)
+    elif data > head.data or data == head.data:
+        if head.left is None:
+            head.left = insert_tree(data, head.left)
+        else:
+            insert_tree(data, head.left)
+    elif head.right is None:
+        head.right = insert_tree(data, head.right)
+    else:
+        insert_tree(data, head.right)
+    return head
+
+def make_tree(data):
+    tree = None
+    for elem in data:
+        tree = insert_tree(elem, tree)
+    return tree
+
+def bin_search(tree, elem):
+    if tree is None:
+        return None
+    elif tree.data == elem:
+        return elem
+    elif elem > tree.data:
+        return bin_search(tree.left, elem)
+    return bin_search(tree.right, elem)
+
+def get_lwidth(node):
+    return get_width(node.left)
+
+def get_rwidth(node):
+    return get_width(node.right)
+
+def get_width(node):
+    return 0 if node is None else get_width(node.left) + get_width(node.right) + 1
+
+def get_height(node):
+    return 0 if node is None else max(get_height(node.left), get_height(node.right)) + 1
+
+def get_wh(node):
+    return get_width(node), get_height(node)
+
+def generate_random_tree(xmin, xmax, rangesize):
+    l = [randint(xmin, xmax) for i in range(rangesize)]
+    return make_tree(l)
+
+D_HOR = 4
+D_VEC = 8
+RADIUS = 2
+FIGSIZE = (11/2,9/2)
+SUBPLOT = 111
+
+def draw_node(x, y, v, ax):
+    c_node = Circle((x,y), radius=RADIUS, color='green')
+    ax.add_patch(c_node)
+    plt.text(x, y, '%d' % v, ha='center', va= 'bottom',fontsize=11)
+
+def draw_edge(x1, y1, x2, y2, r=RADIUS):
+    x = (x1, x2)
+    y = (y1, y2)
+    plt.plot(x, y, 'k-')
+
+def create_win(root):
+    WEIGHT, HEIGHT = get_wh(root)
+    WEIGHT = (WEIGHT+1)*D_HOR
+    HEIGHT = (HEIGHT+1)*D_VEC
+    fig = plt.figure(figsize=FIGSIZE)
+    ax = fig.add_subplot(SUBPLOT)
+    plt.xlim(0, WEIGHT)
+    plt.ylim(0, HEIGHT)
+    x = (get_lwidth(root) + 1) * D_HOR
+    y = HEIGHT - D_VEC
+    return fig, ax, x, y
+
+def print_tree_by_inorder(root, x, y, ax):
+    if root is None:
+        return
+    draw_node(x, y, root.data, ax)
+    lx = rx = 0
+    ly = ry = y - D_VEC
+    if root.left is not None:
+        lx = x - D_HOR * (get_rwidth(root.left) + 1)
+        draw_edge(x, y, lx, ly, RADIUS)
+    if root.right is not None:
+        rx = x + D_HOR * (get_lwidth(root.right) + 1)
+        draw_edge(x, y, rx, ry, RADIUS)
+    print_tree_by_inorder(root.left, lx, ly, ax)
+    print_tree_by_inorder(root.right, rx, ry, ax)
+
+def show_tree(root):
+    _, ax, x, y = create_win(root)
+    print_tree_by_inorder(root, x, y, ax)
+    plt.show()
+
+def main(argv):
+    try:
+        root = generate_random_tree(int(argv[1]), int(argv[2]), int(argv[3]))
+        show_tree(root)
+    except Exception as e:
+        print("Error: " + str(e))
+        print(str(sys.argv[0]) + " [xmin] [xmax] [rangesize]", file=sys.stderr)
+
+if __name__ == '__main__':
+    main(sys.argv)
